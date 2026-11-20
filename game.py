@@ -562,13 +562,23 @@ def death_screen(state, pre, rng):
     return _reply([pre, msg, reward], END_BUTTONS)
 
 
+WELCOME_TEXT = (
+    "성검에 선택받으신 것을 환영합니다!\n"
+    "순무나 캐던 당신에게 갑자기 무거운 운명이 쥐어졌습니다.\n\n"
+    "자, 마왕을 잡으러 떠나볼까요?"
+)
+WELCOME_IMAGE_ID = "E001"   # images 폴더의 E001.jpg(또는 .png)가 환영 카드 이미지. 없으면 글 카드
+
+
 def intro_screen():
-    return _reply(
-        ["레벨 1 용사\n\n성검이 하필 당신을 골랐다.\n선택에 따라 이야기가 달라지는 텍스트 모험입니다.\n\n"
-         "· 아래 버튼을 눌러 선택하세요.\n· 판이 끝나면 '검의 기억'을 얻고, 광장에서 다음 용사를 강하게 만들 수 있습니다.\n"
-         "· '상태'로 능력과 아이템을 확인할 수 있습니다."],
-        ["새 게임", "광장", "기록"],
-    )
+    """처음 온 유저에게 보여 주는 환영 카드. (웰컴 블록에서도 이 화면을 쓴다)"""
+    image = None
+    for ext in ("jpg", "jpeg", "png"):
+        if (IMAGE_DIR / f"{WELCOME_IMAGE_ID}.{ext}").exists():
+            image = f"/img/{WELCOME_IMAGE_ID}.{ext}"
+            break
+    card = {"title": "레벨 1 용사", "desc": WELCOME_TEXT, "image": image, "buttons": ["게임 시작"]}
+    return _reply([], ["게임 시작", "광장", "기록"], card)
 
 
 def hub_screen(state, pre=None):
