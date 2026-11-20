@@ -97,6 +97,31 @@ def kakao_response(reply, base_url=""):
     }
 
 
+WELCOME_TEXT = (
+    "성검에 선택받으신 것을 환영합니다!\n"
+    "순무나 캐던 당신에게 갑자기 무거운 운명이 쥐어졌습니다.\n\n"
+    "자, 마왕을 잡으러 떠나볼까요?"
+)
+
+
+def welcome_response(base_url=""):
+    """채팅방에 처음 들어왔을 때 보여 주는 환영 카드."""
+    return {
+        "version": "2.0",
+        "template": {
+            "outputs": [{
+                "basicCard": {
+                    "title": "레벨 1 용사",
+                    "description": WELCOME_TEXT,
+                    "thumbnail": {"imageUrl": (PUBLIC_URL or base_url) + "/img/E001.jpg"},
+                    "buttons": [{"label": "게임 시작", "action": "message",
+                                 "messageText": "게임 시작"}],
+                }
+            }]
+        },
+    }
+
+
 @app.get("/")
 def health():
     images = sum(1 for e in game.DATA["events"].values() if e.get("image"))
@@ -107,53 +132,24 @@ def health():
 async def skill(request: Request):
     try:
         body = await request.json()
-        
-        # 웰컴 블록(첫 접속) 처리
-        intent_name = body.get("intent", {}).get("name", "")
-        utterance = body.get("userRequest", {}).get("utterance", "").strip()
-        
+        intent_name = (body.get("intent") or {}).get("name", "")
+        utterance = ((body.get("userRequest") or {}).get("utterance") or "").strip()
+
         proto = request.headers.get("x-forwarded-proto", request.url.scheme)
         host = request.headers.get("x-forwarded-host") or request.headers.get("host", "")
         base_url = f"{proto}://{host}"
-        
-        if intent_name == "웰컴 블록" or utterance == "시작" or utterance == "":
-            img_url = (PUBLIC_URL or base_url) + "/img/E001.jpg"
-            return {
-                "version": "2.0",
-                "template": {
-                    "outputs": [
-                        {
-                            "basicCard": {
-                                "title": "레벨 1 용사",
-                                "description": "성검에 선택받으신 것을 환영합니다!
-순무나 캐던 당신에게 갑자기 무거운 운명이 쥐어졌습니다.
 
-자, 마왕을 잡으러 떠나볼까요?",
-                                "thumbnail": {
-                                    "imageUrl": img_url
-                                },
-                                "buttons": [
-                                    {
-                                        "label": "게임 시작",
-                                        "action": "message",
-                                        "messageText": "게임 시작"
-                                    }
-                                ]
-                            }
-                        }
-                    ]
-                }
-            }
-            
-        user = body.get("userRequest", {}).get("user", {})
+        # 웰컴 블록(채팅방 첫 입장)이나 빈 입력일 때만 환영 카드를 보여 준다.
+        # '시작' 같은 명령어는 게임 엔진이 처리하도록 그대로 넘긴다 (진행 중인 판 보호).
+        if intent_name == "웰컴 블록" or utterance == "":
+            return welcome_response(base_url)
+
+        user = (body.get("userRequest") or {}).get("user") or {}
         user_id = user.get("id") or "anonymous"
-        utterance = body.get("userRequest", {}).get("utterance", "")
         state = await run_in_threadpool(load_state, user_id)
         reply = game.handle(state, utterance)
         await run_in_threadpool(save_state, user_id, state)
-        proto = request.headers.get("x-forwarded-proto", request.url.scheme)
-        host = request.headers.get("x-forwarded-host") or request.headers.get("host", "")
-        return kakao_response(reply, f"{proto}://{host}")
+        return kakao_response(reply, base_url)
     except Exception:
         log.exception("skill error")
         return kakao_response({
