@@ -107,6 +107,44 @@ def health():
 async def skill(request: Request):
     try:
         body = await request.json()
+        
+        # 웰컴 블록(첫 접속) 처리
+        intent_name = body.get("intent", {}).get("name", "")
+        utterance = body.get("userRequest", {}).get("utterance", "").strip()
+        
+        proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+        host = request.headers.get("x-forwarded-host") or request.headers.get("host", "")
+        base_url = f"{proto}://{host}"
+        
+        if intent_name == "웰컴 블록" or utterance == "시작" or utterance == "":
+            img_url = (PUBLIC_URL or base_url) + "/img/E001.jpg"
+            return {
+                "version": "2.0",
+                "template": {
+                    "outputs": [
+                        {
+                            "basicCard": {
+                                "title": "레벨 1 용사",
+                                "description": "성검에 선택받으신 것을 환영합니다!
+순무나 캐던 당신에게 갑자기 무거운 운명이 쥐어졌습니다.
+
+자, 마왕을 잡으러 떠나볼까요?",
+                                "thumbnail": {
+                                    "imageUrl": img_url
+                                },
+                                "buttons": [
+                                    {
+                                        "label": "게임 시작",
+                                        "action": "message",
+                                        "messageText": "게임 시작"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+            
         user = body.get("userRequest", {}).get("user", {})
         user_id = user.get("id") or "anonymous"
         utterance = body.get("userRequest", {}).get("utterance", "")
