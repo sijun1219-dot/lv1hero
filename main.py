@@ -104,22 +104,22 @@ WELCOME_TEXT = (
 )
 
 
+WELCOME_IMAGE = "E001.jpg"   # images 폴더에 이 파일이 있으면 이미지 카드, 없으면 글 카드
+
+
 def welcome_response(base_url=""):
     """채팅방에 처음 들어왔을 때 보여 주는 환영 카드."""
-    return {
-        "version": "2.0",
-        "template": {
-            "outputs": [{
-                "basicCard": {
-                    "title": "레벨 1 용사",
-                    "description": WELCOME_TEXT,
-                    "thumbnail": {"imageUrl": (PUBLIC_URL or base_url) + "/img/E001.jpg"},
-                    "buttons": [{"label": "게임 시작", "action": "message",
-                                 "messageText": "게임 시작"}],
-                }
-            }]
-        },
+    card = {
+        "title": "레벨 1 용사",
+        "description": WELCOME_TEXT,
+        "buttons": [{"label": "게임 시작", "action": "message", "messageText": "게임 시작"}],
     }
+    if (game.IMAGE_DIR / WELCOME_IMAGE).exists():
+        card["thumbnail"] = {"imageUrl": f"{PUBLIC_URL or base_url}/img/{WELCOME_IMAGE}"}
+        output = {"basicCard": card}
+    else:
+        output = {"textCard": card}   # 이미지가 없어도 카드가 깨지지 않게
+    return {"version": "2.0", "template": {"outputs": [output]}}
 
 
 @app.get("/")
