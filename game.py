@@ -76,9 +76,11 @@ def load_data(path=DATA_FILE):
                 if (IMAGE_DIR / f"{row[0]}.{ext}").exists():
                     image = f"/img/{row[0]}.{ext}"
                     break
+        # 본문 맨 앞의 【 제목 】 줄은 카드 제목과 겹치므로 지운다
+        text = re.sub(r"^\s*【[^】]*】\s*", "", str(row[4] or ""), count=1)
         events[row[0]] = {
             "id": row[0], "chapter": chapter, "type": row[2], "title": row[3] or "",
-            "text": row[4] or "", "appear": row[6], "image": image, "choices": [],
+            "text": text, "appear": row[6], "image": image, "choices": [],
         }
         order.append(row[0])
     for row in wb["선택지"].iter_rows(min_row=2, values_only=True):
